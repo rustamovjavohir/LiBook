@@ -3,8 +3,14 @@ from .models import *
 
 class UserSerializers(ModelSerializer):
     class Meta:
-        model = Users
+        model = User
         fields = "__all__"
+
+class AkkountSerializers(ModelSerializer):
+    class Meta:
+        model = Akkount
+        fields = "__all__"
+
 class BookSerializers(ModelSerializer):
     class Meta:
         model = Book
@@ -19,4 +25,9 @@ class BoxSerializers(ModelSerializer):
 class MessageSerializers(ModelSerializer):
     class Meta:
         model = Message
+        fields = "__all__"
+
+class ReplyMessageSerializers(ModelSerializer):
+    class Meta:
+        model = ReplyMessage
         fields = "__all__"
