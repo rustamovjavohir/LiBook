@@ -18,6 +18,10 @@ class BoxViews(ModelViewSet):
     queryset = Box.objects.all()
     serializer_class = BoxSerializers
 
+class CateogryViews(ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializers
+
 class MessageViews(ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializers

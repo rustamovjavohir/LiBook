@@ -4,10 +4,12 @@ from app.views import (UserViews,
                          BoxViews,
                          MessageViews,
                          ReplyMessageViews,
-                       AkkountViews)
+                       AkkountViews,
+                       CateogryViews)
 
 routers = DefaultRouter()
 routers.register(r'user',UserViews,basename='user')
+routers.register(r'cateogry',CateogryViews,basename='category')
 routers.register(r'book',BookViews,basename='book')
 routers.register(r'box',BoxViews,basename='box')
 routers.register(r'Message',MessageViews,basename='Message')

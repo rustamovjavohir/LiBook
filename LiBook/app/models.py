@@ -15,12 +15,23 @@ class Akkount(models.Model):
     def __str__(self):
         return self.user.username
 
+class Category(models.Model):
+    name = models.CharField("Kategoriya name",max_length=100, null=True)
+    photo = models.ImageField(null=True,blank=True)
+    views = models.IntegerField(default=0)
+    status = models.CharField(max_length=250,null=True,blank=True)
 
+    def __str__(self):
+        try:
+            return self.name
+        except Exception as e:
+            return ""
 class Book(models.Model):
     TYPE = (('AUDIO',"AUDIO"),
             ("DOC","DOC"))
     LANG = (('UZ',"UZ"),
             ("RU","RU"))
+    category = models.ForeignKey(Category,on_delete=models.SET_NULL,null=True)
     author = models.CharField(max_length=100,null=True)
     name = models.CharField(max_length=100,null=True)
     about = models.TextField(null=True)
@@ -30,6 +41,8 @@ class Book(models.Model):
     status = models.IntegerField(null=True,blank=True)
     type = models.CharField(max_length=6,null=True,choices=TYPE,default="DOC")
     lang = models.CharField(max_length=2,null=True,default="UZ",choices=LANG)
+    views = models.IntegerField(default=0)
+
 
     # @property
     def __str__(self):
@@ -55,7 +68,6 @@ class Box(models.Model):
 
     def __str__(self):
         return self.book.name
-
 
 
 class Message(models.Model):

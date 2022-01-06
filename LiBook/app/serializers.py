@@ -4,11 +4,16 @@ from .models import *
 class UserSerializers(ModelSerializer):
     class Meta:
         model = User
-        fields = "__all__"
+        fields = ('id','password','username','first_name','last_name',"email")
 
 class AkkountSerializers(ModelSerializer):
     class Meta:
         model = Akkount
+        fields = "__all__"
+
+class CategorySerializers(ModelSerializer):
+    class Meta:
+        model = Category
         fields = "__all__"
 
 class BookSerializers(ModelSerializer):
