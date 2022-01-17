@@ -3,9 +3,6 @@ from django.contrib.auth.models import User
 from datetime import datetime
 
 class Akkount(models.Model):
-    # name = models.CharField(max_length=35,null=True,blank=True)
-    # username = models.CharField(max_length=35,unique=True)
-    # gmail = models.EmailField(null=True,blank=True,unique=True)
     user = models.ForeignKey(User,on_delete=models.CASCADE,null=True)
     photo = models.ImageField(null=True,blank=True)
     @property
@@ -95,3 +92,14 @@ class ReplyMessage(models.Model):
 
     def __str__(self):
         return "%s %s" % (self.user.username,self.message[:10])
+
+class Advice(models.Model):
+    text = models.TextField(null=True,blank=True)
+    user = models.ForeignKey(User,on_delete=models.CASCADE,null=True,blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+    telegram_id = models.IntegerField(null=True,blank=True)
+    def __str__(self):
+        try:
+            return self.text[:20]
+        except Exception as e:
+            return ''

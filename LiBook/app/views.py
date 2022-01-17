@@ -6,6 +6,7 @@ class UserViews(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializers
 
+
 class AkkountViews(ModelViewSet):
     queryset = Akkount.objects.all()
     serializer_class = AkkountSerializers
