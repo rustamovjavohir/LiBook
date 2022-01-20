@@ -1,16 +1,17 @@
-from django.db import models
 # from django.contrib.auth.models import User
 from datetime import datetime
+
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
-
+from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-class User(AbstractBaseUser,PermissionsMixin): # PermissionsMixin
-    first_name = models.CharField(_("first name"), max_length=150, blank=True,null=True)
-    last_name = models.CharField(_("last name"), max_length=150, blank=True,null=True)
-    profile_image = models.ImageField(max_length=255, blank=True,null=True)
+
+class User(AbstractBaseUser, PermissionsMixin): # PermissionsMixin
+    first_name = models.CharField(_("first name"), max_length=150, blank=True, null=True)
+    last_name = models.CharField(_("last name"), max_length=150, blank=True, null=True)
+    profile_image = models.ImageField(max_length=255, blank=True, null=True)
     email = models.EmailField(_("email address"), blank=True)
     username = models.CharField(_('username'),
         max_length = 150,
@@ -114,22 +115,24 @@ class Book(models.Model):
     lang = models.CharField(max_length=2,null=True,default="UZ",choices=LANG)
     views = models.IntegerField(default=0)
 
-
     # @property
     def __str__(self):
         return self.name
+
     @property
     def file_url(self):
         try:
             return self.file.url
         except Exception as e:
             return ''
+
     @property
     def photo_url(self):
         try:
             return self.photo.url
         except Exception as e:
             return ''
+
 
 class Like(models.Model):
     book_file = models.ForeignKey(Book,on_delete=models.SET_NULL,null=True)
@@ -143,6 +146,7 @@ class Like(models.Model):
         except Exception as e:
             print(e)
             return ""
+
 
 class Box(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE,null=True)
@@ -179,6 +183,7 @@ class ReplyMessage(models.Model):
 
     def __str__(self):
         return "%s %s" % (self.user.username,self.message[:10])
+
 
 class Advice(models.Model):
     text = models.TextField(null=True,blank=True)

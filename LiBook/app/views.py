@@ -92,6 +92,7 @@ class ReplyMessageViews(ModelViewSet):
     queryset = ReplyMessage.objects.all()
     serializer_class = ReplyMessageSerializers
 
+
 class AdviceViews(ModelViewSet):
     queryset = Advice.objects.all()
     serializer_class = AdviceSerializers
