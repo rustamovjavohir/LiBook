@@ -1,25 +1,33 @@
+from datetime import timedelta
+
+import jwt as jwt
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .serializers import *
 
 
-class UserViews(ModelViewSet):
+class UsersViews(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializers
     permission_classes = (AllowAny,)
+
 
 # class AkkountViews(ModelViewSet):
 #     queryset = Akkount.objects.all()
 #     serializer_class = AkkountSerializers
 
+
 class BookViews(ModelViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializers
+
     def retrieve(self, request, *args, **kwargs):
         id = kwargs['pk']
-        data=[]
+        data = []
         book_ = Book.objects.get(id=int(id))
         book_data = {
             "id": book_.id,
@@ -41,52 +49,56 @@ class BookViews(ModelViewSet):
             a = ReplyMessage.objects.filter(basic_message=i)
             for j in a:
                 reply_message.append({
-                    'id':j.id,
-                    'username':j.user.user.username,
-                    'message':j.message,
-                    'date':j.date.strftime("%Y-%m-%d %H:%M:%S")
+                    'id': j.id,
+                    'username': j.user.user.username,
+                    'message': j.message,
+                    'date': j.date.strftime("%Y-%m-%d %H:%M:%S")
                 })
             d = {
-                'id':i.id,
-                'username':i.user.user.username,
-                'message':i.message,
-                'date':i.date.strftime("%Y-%m-%d %H:%M:%S"),
-                'views':i.views,
-                'reply_message':reply_message
+                'id': i.id,
+                'username': i.user.user.username,
+                'message': i.message,
+                'date': i.date.strftime("%Y-%m-%d %H:%M:%S"),
+                'views': i.views,
+                'reply_message': reply_message
             }
             data.append(d)
 
-        return Response({"book":book_data,
-                         'message':data})
+        return Response({"book": book_data,
+                         'message': data})
+
 
 class BoxViews(ModelViewSet):
     queryset = Box.objects.all()
     serializer_class = BoxSerializers
+
     def retrieve(self, request, *args, **kwargs):
         id = kwargs['pk']
-        data=[]
+        data = []
         for item in Box.objects.all():
             if item.user.id == int(id):
                 d = {
-                    'id':item.id,
-                    'book_name':item.book.name,
-                    'book_photo':item.book.photo_url,
-                    'book_author':item.book.author,
-                    'book_category':item.book.category.name,
-                    'user':item.user.id,
-                    'date':item.date.strftime("%Y-%m-%d %H:%M:%S"),
+                    'id': item.id,
+                    'book_name': item.book.name,
+                    'book_photo': item.book.photo_url,
+                    'book_author': item.book.author,
+                    'book_category': item.book.category.name,
+                    'user': item.user.id,
+                    'date': item.date.strftime("%Y-%m-%d %H:%M:%S"),
                 }
                 data.append(d)
-        return Response({"result":data})
+        return Response({"result": data})
 
 
 class CateogryViews(ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializers
 
+
 class MessageViews(ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializers
+
 
 class ReplyMessageViews(ModelViewSet):
     queryset = ReplyMessage.objects.all()
@@ -97,4 +109,64 @@ class AdviceViews(ModelViewSet):
     queryset = Advice.objects.all()
     serializer_class = AdviceSerializers
 
-#commit
+
+class RegisterViews(APIView):
+    # queryset = User.objects.all()
+    # serializer_class = UserSerializers
+    def post(self, request):
+        serializer = UserSerializers(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class LoginViews(APIView):
+    def post(self, request):
+        username = request.data['username']
+        password = request.data['password']
+
+        user = User.objects.filter(username=username).first()
+        if user is None:
+            raise AuthenticationFailed('User not found!')
+        if not user.check_password(password):
+            raise AuthenticationFailed('Incorrect password!')
+
+        payload = {
+            "id": user.id,
+            "exp": datetime.utcnow() + timedelta(minutes=10),
+            "iat": datetime.utcnow(),
+        }
+
+        token = jwt.encode(payload, 'secret', algorithm='HS256')
+        response = Response()
+        response.data = {
+            "jwt": token,
+        }
+        response.set_cookie(key='token', value=token, httponly=True)
+        return response
+
+
+class UserViews(APIView):
+
+    def get(self, request):
+        token = request.COOKIES.get('token')
+        if not token:
+            raise AuthenticationFailed('Unauthenticated')
+        try:
+            payload = jwt.decode(token, 'secret', algorithms='HS256')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated')
+
+        user = User.objects.filter(id=payload.get('id')).first()
+        serializer = UserSerializers(user)
+        return Response(serializer.data)
+
+
+class LogoutViews(APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie('token')
+        response.data = {
+            "massage": "success"
+        }
+        return response
