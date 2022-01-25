@@ -45,6 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):  # PermissionsMixin
     class Meta:
         verbose_name = _("user")
         verbose_name_plural = _("users")
+        ordering = ['id']
 
     def clean(self):
         super().clean()
@@ -133,6 +134,9 @@ class Book(models.Model):
             return self.photo.url
         except Exception as e:
             return ''
+
+    class Meta:
+        ordering = ['id']
 
 
 class Like(models.Model):
