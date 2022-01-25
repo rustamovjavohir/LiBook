@@ -1,6 +1,8 @@
 from datetime import timedelta
 
 import jwt as jwt
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -8,12 +10,20 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .serializers import *
+from .utils import BookPagination, UserPagination
 
 
 class UsersViews(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializers
     permission_classes = (AllowAny,)
+    pagination_class = UserPagination
+
+    def retrieve(self, request, *args, **kwargs):
+        queryset = User.objects.all()
+        user = get_object_or_404(queryset, pk=kwargs['pk'])
+        serializer = UserSerializers(user)
+        return Response(serializer.data)
 
 
 # class AkkountViews(ModelViewSet):
@@ -24,18 +34,20 @@ class UsersViews(ModelViewSet):
 class BookViews(ModelViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializers
+    pagination_class = BookPagination
 
+    @csrf_exempt
     def retrieve(self, request, *args, **kwargs):
         id = kwargs['pk']
         data = []
-        book_ = Book.objects.get(id=int(id))
+        book_ = get_object_or_404(klass=Book, id=int(id))
         book_data = {
             "id": book_.id,
             "author": book_.author,
             "name": book_.name,
             "about": book_.about,
             "file": book_.file_url,
-            "add_date": book_.add_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "add_date": book_.add_date.strftime("%Y-%m-%d, %H:%M:%S"),
             "photo": book_.photo_url,
             "status": book_.status,
             "type": book_.type,
@@ -43,26 +55,27 @@ class BookViews(ModelViewSet):
             "views": book_.views,
             "category": book_.category.id
         }
-        comment = Message.objects.filter(book=int(id))
-        for i in comment:
-            reply_message = []
-            a = ReplyMessage.objects.filter(basic_message=i)
-            for j in a:
-                reply_message.append({
-                    'id': j.id,
-                    'username': j.user.user.username,
-                    'message': j.message,
-                    'date': j.date.strftime("%Y-%m-%d %H:%M:%S")
-                })
-            d = {
-                'id': i.id,
-                'username': i.user.user.username,
-                'message': i.message,
-                'date': i.date.strftime("%Y-%m-%d %H:%M:%S"),
-                'views': i.views,
-                'reply_message': reply_message
-            }
-            data.append(d)
+        if Message.objects.filter(book=int(id)) is not None:
+            comment = Message.objects.filter(book=int(id))
+            for i in comment:
+                reply_message = []
+                a = ReplyMessage.objects.filter(basic_message=i)
+                for j in a:
+                    reply_message.append({
+                        'id': j.id,
+                        'username': j.user.username,
+                        'message': j.message,
+                        'date': j.date.strftime("%Y-%m-%d %H:%M:%S")
+                    })
+                d = {
+                    'id': i.id,
+                    'username': i.user.username,
+                    'message': i.message,
+                    'date': i.date.strftime("%Y-%m-%d %H:%M:%S"),
+                    'views': i.views,
+                    'reply_message': reply_message
+                }
+                data.append(d)
 
         return Response({"book": book_data,
                          'message': data})
@@ -111,8 +124,6 @@ class AdviceViews(ModelViewSet):
 
 
 class RegisterViews(APIView):
-    # queryset = User.objects.all()
-    # serializer_class = UserSerializers
     def post(self, request):
         serializer = UserSerializers(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -140,7 +151,7 @@ class LoginViews(APIView):
         token = jwt.encode(payload, 'secret', algorithm='HS256')
         response = Response()
         response.data = {
-            "jwt": token,
+            "token": token
         }
         response.set_cookie(key='token', value=token, httponly=True)
         return response
@@ -170,3 +181,4 @@ class LogoutViews(APIView):
             "massage": "success"
         }
         return response
+
