@@ -4,11 +4,12 @@ import jwt as jwt
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication,BaseAuthentication, BasicAuthentication,RemoteUserAuthentication
+# from rest_framework_simplejwt import authentication
 from .serializers import *
 from .utils import BookPagination, UserPagination
 
@@ -16,7 +17,8 @@ from .utils import BookPagination, UserPagination
 class UsersViews(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializers
-    permission_classes = (AllowAny,)
+    # authentication_classes = [authentication.JWTTokenUserAuthentication]
+    permission_classes = (IsAuthenticated, RemoteUserAuthentication, SessionAuthentication,TokenAuthentication, BaseAuthentication, BasicAuthentication)
     pagination_class = UserPagination
 
     def retrieve(self, request, *args, **kwargs):
@@ -153,14 +155,14 @@ class LoginViews(APIView):
         response.data = {
             "token": token
         }
-        response.set_cookie(key='token', value=token, httponly=True)
+        response.set_cookie(key='Token', value=token, httponly=True)
         return response
 
 
 class UserViews(APIView):
 
     def get(self, request):
-        token = request.COOKIES.get('token')
+        token = request.COOKIES.get('Token')
         if not token:
             raise AuthenticationFailed('Unauthenticated')
         try:
@@ -176,7 +178,7 @@ class UserViews(APIView):
 class LogoutViews(APIView):
     def post(self, request):
         response = Response()
-        response.delete_cookie('token')
+        response.delete_cookie('Token')
         response.data = {
             "massage": "success"
         }
