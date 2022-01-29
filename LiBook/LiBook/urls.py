@@ -25,7 +25,7 @@ from .api import routers
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(routers.urls)),
-    path('auth/', include('app.urls')),
+    path('auth/', include('auth_user.urls')),
     path('gettoken/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('refreshtoken/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

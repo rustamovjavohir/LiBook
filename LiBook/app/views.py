@@ -1,36 +1,29 @@
-from datetime import timedelta
-
-import jwt as jwt
+from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication,BaseAuthentication, BasicAuthentication,RemoteUserAuthentication
-# from rest_framework_simplejwt import authentication
 from .serializers import *
 from .utils import BookPagination, UserPagination
+from auth_user.user_jwt import L_JWTAuthentication
 
 
 class UsersViews(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializers
-    # authentication_classes = [authentication.JWTTokenUserAuthentication]
-    permission_classes = (IsAuthenticated, RemoteUserAuthentication, SessionAuthentication,TokenAuthentication, BaseAuthentication, BasicAuthentication)
+    authentication_classes = [L_JWTAuthentication]
+    permission_classes = (IsAuthenticated,)
     pagination_class = UserPagination
 
     def retrieve(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return Response(data={'detail': 'You do not have permission to perform this action / '
+                                            'Only admins have permission'})
         queryset = User.objects.all()
         user = get_object_or_404(queryset, pk=kwargs['pk'])
         serializer = UserSerializers(user)
         return Response(serializer.data)
-
-
-# class AkkountViews(ModelViewSet):
-#     queryset = Akkount.objects.all()
-#     serializer_class = AkkountSerializers
 
 
 class BookViews(ModelViewSet):
@@ -125,62 +118,4 @@ class AdviceViews(ModelViewSet):
     serializer_class = AdviceSerializers
 
 
-class RegisterViews(APIView):
-    def post(self, request):
-        serializer = UserSerializers(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
-class LoginViews(APIView):
-    def post(self, request):
-        username = request.data['username']
-        password = request.data['password']
-
-        user = User.objects.filter(username=username).first()
-        if user is None:
-            raise AuthenticationFailed('User not found!')
-        if not user.check_password(password):
-            raise AuthenticationFailed('Incorrect password!')
-
-        payload = {
-            "id": user.id,
-            "exp": datetime.utcnow() + timedelta(minutes=10),
-            "iat": datetime.utcnow(),
-        }
-
-        token = jwt.encode(payload, 'secret', algorithm='HS256')
-        response = Response()
-        response.data = {
-            "token": token
-        }
-        response.set_cookie(key='Token', value=token, httponly=True)
-        return response
-
-
-class UserViews(APIView):
-
-    def get(self, request):
-        token = request.COOKIES.get('Token')
-        if not token:
-            raise AuthenticationFailed('Unauthenticated')
-        try:
-            payload = jwt.decode(token, 'secret', algorithms='HS256')
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated')
-
-        user = User.objects.filter(id=payload.get('id')).first()
-        serializer = UserSerializers(user)
-        return Response(serializer.data)
-
-
-class LogoutViews(APIView):
-    def post(self, request):
-        response = Response()
-        response.delete_cookie('Token')
-        response.data = {
-            "massage": "success"
-        }
-        return response
 
