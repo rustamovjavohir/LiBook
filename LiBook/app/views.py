@@ -1,25 +1,30 @@
-from rest_framework.decorators import api_view, permission_classes
+from datetime import timedelta
+
+import jwt as jwt
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication,BaseAuthentication, BasicAuthentication,RemoteUserAuthentication
+# from rest_framework_simplejwt import authentication
 from .serializers import *
 from .utils import BookPagination, UserPagination
 from auth_user.user_jwt import L_JWTAuthentication
+
+from massages.models import Message, ReplyMessage
 
 
 class UsersViews(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializers
+    permission_classes = [IsAuthenticated]
     authentication_classes = [L_JWTAuthentication]
-    permission_classes = (IsAuthenticated,)
     pagination_class = UserPagination
 
     def retrieve(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            return Response(data={'detail': 'You do not have permission to perform this action / '
-                                            'Only admins have permission'})
         queryset = User.objects.all()
         user = get_object_or_404(queryset, pk=kwargs['pk'])
         serializer = UserSerializers(user)
@@ -103,19 +108,24 @@ class CateogryViews(ModelViewSet):
     serializer_class = CategorySerializers
 
 
-class MessageViews(ModelViewSet):
-    queryset = Message.objects.all()
-    serializer_class = MessageSerializers
-
-
-class ReplyMessageViews(ModelViewSet):
-    queryset = ReplyMessage.objects.all()
-    serializer_class = ReplyMessageSerializers
+# class MessageViews(ModelViewSet):
+#     queryset = Message.objects.all()
+#     serializer_class = MessageSerializers
+#
+#
+# class ReplyMessageViews(ModelViewSet):
+#     queryset = ReplyMessage.objects.all()
+#     serializer_class = ReplyMessageSerializers
 
 
 class AdviceViews(ModelViewSet):
     queryset = Advice.objects.all()
     serializer_class = AdviceSerializers
+
+
+
+
+
 
 
 

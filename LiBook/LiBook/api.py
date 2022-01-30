@@ -1,10 +1,9 @@
 from app.views import (UsersViews,
                        BookViews,
                        BoxViews,
-                       MessageViews,
-                       ReplyMessageViews,
                        CateogryViews,
                        AdviceViews)
+from messages.views import (MessageViews, ReplyMessageViews)
 from rest_framework.routers import DefaultRouter
 
 routers = DefaultRouter()

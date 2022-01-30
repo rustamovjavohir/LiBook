@@ -49,17 +49,17 @@ class BoxSerializers(ModelSerializer):
         fields = "__all__"
 
 
-class MessageSerializers(ModelSerializer):
-
-    class Meta:
-        model = Message
-        fields = "__all__"
-
-
-class ReplyMessageSerializers(ModelSerializer):
-    class Meta:
-        model = ReplyMessage
-        fields = "__all__"
+# class MessageSerializers(ModelSerializer):
+#
+#     class Meta:
+#         model = Message
+#         fields = "__all__"
+#
+#
+# class ReplyMessageSerializers(ModelSerializer):
+#     class Meta:
+#         model = ReplyMessage
+#         fields = "__all__"
 
 
 class AdviceSerializers(ModelSerializer):
