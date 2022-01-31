@@ -3,7 +3,7 @@ from app.views import (UsersViews,
                        BoxViews,
                        CateogryViews,
                        AdviceViews)
-from messages.views import (MessageViews, ReplyMessageViews)
+from massages.views import (MessageViews, ReplyMessageViews)
 from rest_framework.routers import DefaultRouter
 
 routers = DefaultRouter()

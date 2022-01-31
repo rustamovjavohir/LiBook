@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('message', models.TextField()),
                 ('date', models.DateTimeField(auto_now_add=True)),
-                ('basic_message', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='messages.message')),
+                ('basic_message', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='massages.message')),
                 ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='app.user')),
             ],
         ),

@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from .models import Message, ReplyMessage
+from massages.models import Message, ReplyMessage
 
 
 class MessageSerializers(ModelSerializer):

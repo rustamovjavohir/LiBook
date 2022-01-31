@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     # local apps
     'app',
     'auth_user',
-    'messages',
+    'massages',
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
