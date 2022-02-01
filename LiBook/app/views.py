@@ -129,6 +129,8 @@ class CateogryViews(ModelViewSet):
     serializer_class = CategorySerializers
 
 
+
+
 # class MessageViews(ModelViewSet):
 #     queryset = Message.objects.all()
 #     serializer_class = MessageSerializers
