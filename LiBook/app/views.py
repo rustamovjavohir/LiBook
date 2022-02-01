@@ -3,6 +3,7 @@ from datetime import timedelta
 import jwt as jwt
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import action
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -15,6 +16,8 @@ from .utils import BookPagination, UserPagination
 from auth_user.user_jwt import L_JWTAuthentication
 
 from massages.models import Message, ReplyMessage
+
+from auth_user.utils import my_books
 
 
 class UsersViews(ModelViewSet):
@@ -84,6 +87,13 @@ class BookViews(ModelViewSet):
 class BoxViews(ModelViewSet):
     queryset = Box.objects.all()
     serializer_class = BoxSerializers
+    authentication_classes = [L_JWTAuthentication]
+
+    @action(methods=['get'], detail=True, url_path='my_books', url_name='py_books')
+    def box(self, request, pk=None, *args, **kwargs):
+        u_id = int(request.user.id)
+        my_books_data = my_books(u_id=u_id)
+        return Response(my_books_data)
 
     def retrieve(self, request, *args, **kwargs):
         id = kwargs['pk']
@@ -101,6 +111,17 @@ class BoxViews(ModelViewSet):
                 }
                 data.append(d)
         return Response({"result": data})
+
+    # @action(methods=['get'], detail=True, url_path='my_books', url_name='py_books')
+    # def my_books(self, request, pk=None):
+    #     u_id = int(request.user.id)
+    #     box = Box.objects.filter(user=u_id)
+    #     box_ser = BoxSerializers(box, many=True)
+    #     for item in box_ser.data:
+    #         book = Book.objects.filter(id=item['book']).first()
+    #         book_ser = BookSerializers(book, many=False)
+    #         item['book'] = book_ser.data
+    #     return Response(box_ser.data)
 
 
 class CateogryViews(ModelViewSet):

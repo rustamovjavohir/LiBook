@@ -6,11 +6,13 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 
 # from ..app.models import User
 from app.models import User
 from app.serializers import UserSerializers
 from .user_jwt import L_JWTAuthentication
+from .utils import my_books
 
 
 class RegisterViews(APIView):
@@ -36,7 +38,7 @@ class LoginViews(APIView):
 
         payload = {
             "id": user.id,
-            "exp": datetime.utcnow() + timedelta(minutes=10),
+            "exp": datetime.utcnow() + timedelta(minutes=60),
             "iat": datetime.utcnow(),
         }
 
@@ -64,7 +66,9 @@ class UserViews(APIView):
 
         user = User.objects.filter(id=payload.get('id')).first()
         serializer = UserSerializers(user)
-        return Response(serializer.data)
+        data = serializer.data
+        data['my_books'] = my_books(u_id=user.id)
+        return Response(data)
 
 
 class LogoutViews(APIView):

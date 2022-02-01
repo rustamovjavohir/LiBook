@@ -25,7 +25,7 @@ class MessageViews(ModelViewSet):
         response.data = data
         return response
 
-    @action(methods=['post'], detail=True, url_path='hello', url_name='hello')
+    @action(methods=['post'], detail=True, url_path='^hello/$', url_name='hello')
     def hello(self, request, pk=None):
         return Response({"hello": f"{pk} {request.data['name']} Hello"})
 
