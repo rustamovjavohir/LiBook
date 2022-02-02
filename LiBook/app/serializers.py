@@ -31,7 +31,6 @@ class UserSerializers(ModelSerializer):
 #         model = Akkount
 #         fields = "__all__"
 
-
 class CategorySerializers(ModelSerializer):
     class Meta:
         model = Category
