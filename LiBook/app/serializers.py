@@ -33,6 +33,7 @@ class UserSerializers(ModelSerializer):
 
 
 class CategorySerializers(ModelSerializer):
+    class Meta:
         model = Category
         fields = "__all__"
 
