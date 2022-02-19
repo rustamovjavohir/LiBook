@@ -3,9 +3,10 @@ from datetime import timedelta
 import jwt as jwt
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import action
+from rest_framework import filters
+from rest_framework.decorators import action, permission_classes
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -23,8 +24,8 @@ from auth_user.utils import my_books
 class UsersViews(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializers
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [L_JWTAuthentication]
+    # permission_classes = [IsAdminUser]
+    # authentication_classes = [L_JWTAuthentication]
     pagination_class = UserPagination
 
     def retrieve(self, request, *args, **kwargs):
@@ -35,29 +36,21 @@ class UsersViews(ModelViewSet):
 
 
 class BookViews(ModelViewSet):
+    search_fields = ['author', 'name']
+    filter_backends = (filters.SearchFilter,)
     queryset = Book.objects.all()
     serializer_class = BookSerializers
     pagination_class = BookPagination
+    # authentication_classes = [L_JWTAuthentication, ]
+    # permission_classes = [IsAdminUser, ]
 
     @csrf_exempt
     def retrieve(self, request, *args, **kwargs):
+        queryset = Book.objects.all()
+        book = get_object_or_404(queryset, pk=kwargs['pk'])
+        serializer = BookSerializers(book)
         id = kwargs['pk']
-        data = []
-        book_ = get_object_or_404(klass=Book, id=int(id))
-        book_data = {
-            "id": book_.id,
-            "author": book_.author,
-            "name": book_.name,
-            "about": book_.about,
-            "file": book_.file_url,
-            "add_date": book_.add_date.strftime("%Y-%m-%d, %H:%M:%S"),
-            "photo": book_.photo_url,
-            "status": book_.status,
-            "type": book_.type,
-            "lang": book_.lang,
-            "views": book_.views,
-            "category": book_.category.id
-        }
+        message_data = []
         if Message.objects.filter(book=int(id)) is not None:
             comment = Message.objects.filter(book=int(id))
             for i in comment:
@@ -78,67 +71,35 @@ class BookViews(ModelViewSet):
                     'views': i.views,
                     'reply_message': reply_message
                 }
-                data.append(d)
-
-        return Response({"book": book_data,
-                         'message': data})
+                message_data.append(d)
+        r_data = serializer.data
+        r_data["message"] = message_data
+        return Response(data=r_data)
 
 
 class BoxViews(ModelViewSet):
     queryset = Box.objects.all()
     serializer_class = BoxSerializers
-    authentication_classes = [L_JWTAuthentication]
+    # authentication_classes = [L_JWTAuthentication]
+    # permission_classes = [IsAdminUser]
 
-    @action(methods=['get'], detail=True, url_path='my_books', url_name='py_books')
+    @action(methods=['post'], detail=False, url_path='user_books', url_name='user_books')
     def box(self, request, pk=None, *args, **kwargs):
-        u_id = int(request.user.id)
-        my_books_data = my_books(u_id=u_id)
-        return Response(my_books_data)
+        # u_id = int(request.user.id)
+        u_id = request.data.get("u_id")
+        user_books_data = my_books(u_id=u_id)
+        return Response(user_books_data)
 
     def retrieve(self, request, *args, **kwargs):
-        id = kwargs['pk']
-        data = []
-        for item in Box.objects.all():
-            if item.user.id == int(id):
-                d = {
-                    'id': item.id,
-                    'book_name': item.book.name,
-                    'book_photo': item.book.photo_url,
-                    'book_author': item.book.author,
-                    'book_category': item.book.category.name,
-                    'user': item.user.id,
-                    'date': item.date.strftime("%Y-%m-%d %H:%M:%S"),
-                }
-                data.append(d)
-        return Response({"result": data})
-
-    # @action(methods=['get'], detail=True, url_path='my_books', url_name='py_books')
-    # def my_books(self, request, pk=None):
-    #     u_id = int(request.user.id)
-    #     box = Box.objects.filter(user=u_id)
-    #     box_ser = BoxSerializers(box, many=True)
-    #     for item in box_ser.data:
-    #         book = Book.objects.filter(id=item['book']).first()
-    #         book_ser = BookSerializers(book, many=False)
-    #         item['book'] = book_ser.data
-    #     return Response(box_ser.data)
+        queryset = Box.objects.all()
+        box = get_object_or_404(queryset, pk=kwargs['pk'])
+        serializer = BoxSerializers(box)
+        return Response(serializer.data)
 
 
 class CateogryViews(ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializers
-
-
-
-
-# class MessageViews(ModelViewSet):
-#     queryset = Message.objects.all()
-#     serializer_class = MessageSerializers
-#
-#
-# class ReplyMessageViews(ModelViewSet):
-#     queryset = ReplyMessage.objects.all()
-#     serializer_class = ReplyMessageSerializers
 
 
 class AdviceViews(ModelViewSet):

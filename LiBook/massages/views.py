@@ -13,21 +13,27 @@ class MessageViews(ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializers
 
+    @action(methods=['post'], detail=False, url_path='hello', url_name='hello')
+    def hello(self, request):
+        return Response({"hello": f" {request.data['name']} Hello"})
+
+    @action(methods=['post'], detail=True, url_path='detail2', url_name='detail2')
+    def detail2(self, request, **kwargs):
+        return Response({"hello": f" {request.data['name']} Hello with detail2"})
+
     def retrieve(self, request, *args, **kwargs):
         response = Response()
         m_id = int(kwargs['pk'])
         message = get_object_or_404(klass=Message, id=int(m_id))
         message_serializer = MessageSerializers(message)
-        data = dict(message_serializer.data)
+        data = message_serializer.data
         rep_message = ReplyMessage.objects.filter(basic_message=m_id)
         rep_mes_ser = ReplyMessageSerializers(rep_message, many=True)
         data["replay_message"] = rep_mes_ser.data
         response.data = data
         return response
 
-    @action(methods=['post'], detail=True, url_path='^hello/$', url_name='hello')
-    def hello(self, request, pk=None):
-        return Response({"hello": f"{pk} {request.data['name']} Hello"})
+
 
 
 class ReplyMessageViews(ModelViewSet):

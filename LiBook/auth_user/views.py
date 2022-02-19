@@ -3,16 +3,18 @@ from datetime import datetime, timedelta
 import jwt
 from django.shortcuts import render
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
 
 # from ..app.models import User
 from app.models import User
 from app.serializers import UserSerializers
+from rest_framework.viewsets import ModelViewSet
+
 from .user_jwt import L_JWTAuthentication
-from .utils import my_books
+from .utils import my_books, admin, check_token
 
 
 class RegisterViews(APIView):
@@ -55,20 +57,23 @@ class UserViews(APIView):
 
     authentication_classes = [L_JWTAuthentication]
     permission_classes = [IsAuthenticated, ]
-    def get(self, request):
-        token = request.COOKIES.get('Token')
-        if not token:
-            raise AuthenticationFailed('Unauthenticated')
-        try:
-            payload = jwt.decode(token, 'secret', algorithms='HS256')
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated')
 
+    def get(self, request):
+        payload = check_token(request)
         user = User.objects.filter(id=payload.get('id')).first()
         serializer = UserSerializers(user)
         data = serializer.data
         data['my_books'] = my_books(u_id=user.id)
+        data['users'] = admin(user)
         return Response(data)
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        data = request.data
+        serializer = UserSerializers(user, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class LogoutViews(APIView):
@@ -79,4 +84,3 @@ class LogoutViews(APIView):
             "massage": "success"
         }
         return response
-#this is comment

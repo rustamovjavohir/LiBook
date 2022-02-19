@@ -5,11 +5,6 @@ from .models import *
 
 
 class UserSerializers(ModelSerializer):
-    # first_name = serializers.CharField(max_length=100)
-    # last_name = serializers.CharField(max_length=100)
-    # email = serializers.EmailField()
-    # date_of_birth = serializers.DateField()
-    # password = serializers.CharField()
 
     class Meta:
         model = User
@@ -21,6 +16,19 @@ class UserSerializers(ModelSerializer):
         instance = self.Meta.model(**validated_data)
 
         if password is not None:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        # if self.context['request'].user.is_staff:
+        instance.username = validated_data.get('username', instance.username)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
+        password = validated_data.get('password')
+        if password:
             instance.set_password(password)
         instance.save()
         return instance
@@ -47,19 +55,6 @@ class BoxSerializers(ModelSerializer):
     class Meta:
         model = Box
         fields = "__all__"
-
-
-# class MessageSerializers(ModelSerializer):
-#
-#     class Meta:
-#         model = Message
-#         fields = "__all__"
-#
-#
-# class ReplyMessageSerializers(ModelSerializer):
-#     class Meta:
-#         model = ReplyMessage
-#         fields = "__all__"
 
 
 class AdviceSerializers(ModelSerializer):
