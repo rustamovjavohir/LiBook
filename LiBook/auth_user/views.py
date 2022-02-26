@@ -6,10 +6,13 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.decorators import action, permission_classes
+from drf_yasg.utils import swagger_auto_schema
 
 # from ..app.models import User
 from app.models import User
+from .serializers import LoginSerializer
 from app.serializers import UserSerializers
 from rest_framework.viewsets import ModelViewSet
 
@@ -17,18 +20,29 @@ from .user_jwt import L_JWTAuthentication
 from .utils import my_books, admin, check_token
 
 
-class RegisterViews(APIView):
+class RegisterViews(GenericAPIView):
+    serializer_class = UserSerializers
+
+    @swagger_auto_schema(operation_summary="Ro'yhatdan o'tish")
     def post(self, request):
+        """
+        Foydalanuvchini registratsiay qilish
+        """
         serializer = UserSerializers(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 
 
-class LoginViews(APIView):
+class LoginViews(GenericAPIView):
+    serializer_class = LoginSerializer
     permission_classes = [AllowAny, ]
 
+    @swagger_auto_schema(operation_summary="Login")
     def post(self, request):
+        """
+        Foydalanuvchini tizimga kirishi (login)
+        """
         username = request.data['username']
         password = request.data['password']
 
@@ -53,12 +67,17 @@ class LoginViews(APIView):
         return response
 
 
-class UserViews(APIView):
+class UserViews(GenericAPIView):
 
     authentication_classes = [L_JWTAuthentication]
     permission_classes = [IsAuthenticated, ]
+    serializer_class = UserSerializers
 
+    @swagger_auto_schema(operation_summary="Foydalanuvchi haqidagi malumotlar")
     def get(self, request):
+        """
+        Foydalanuvchi haqidagi ma'lumotlarni namoish etadi, olgan kitoblari
+        """
         payload = check_token(request)
         user = User.objects.filter(id=payload.get('id')).first()
         serializer = UserSerializers(user)
@@ -67,7 +86,11 @@ class UserViews(APIView):
         data['users'] = admin(user)
         return Response(data)
 
+    @swagger_auto_schema(operation_summary="Foydalanuvchi ma`lumotlarini yangilash")
     def put(self, request, *args, **kwargs):
+        """
+        Foydalanuvchi ma`lumotlarini yangilash
+        """
         user = request.user
         data = request.data
         serializer = UserSerializers(user, data=data, partial=True)
@@ -77,10 +100,15 @@ class UserViews(APIView):
 
 
 class LogoutViews(APIView):
+
+    @swagger_auto_schema(operation_summary="Tizimdan chiqish")
     def post(self, request):
+        """
+        Logout qiladigan funksiya
+        """
         response = Response()
         response.delete_cookie('Token')
         response.data = {
-            "massage": "success"
+            "massage": "Tizimdam muvoffaqiyatni tark endinggiz"
         }
         return response

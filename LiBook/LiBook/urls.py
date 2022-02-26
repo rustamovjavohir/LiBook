@@ -19,15 +19,20 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .api import routers
+from .yasg import urlpatterns as doc_url
 
 # from ..app import routers
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(routers.urls)),
+    path('books/', include('app.urls')),
     path('auth/', include('auth_user.urls')),
     path('gettoken/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('refreshtoken/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
+urlpatterns += doc_url
+
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

@@ -50,11 +50,11 @@ class BookSerializers(ModelSerializer):
         model = Book
         fields = "__all__"
 
-
 class BoxSerializers(ModelSerializer):
     class Meta:
         model = Box
         fields = "__all__"
+
 
 
 class AdviceSerializers(ModelSerializer):
