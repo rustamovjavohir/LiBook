@@ -26,7 +26,7 @@ from .yasg import urlpatterns as doc_url
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('', include(routers.urls)),
+    path('', include(routers.urls)),
     path('books/', include('app.urls')),
     path('auth/', include('auth_user.urls')),
     path('gettoken/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
