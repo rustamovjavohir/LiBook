@@ -11,8 +11,8 @@ routers.register(r'user', UsersViews, basename='user')
 routers.register(r'cateogry', CateogryViews, basename='category')
 routers.register(r'book', BookViews, basename='book')
 routers.register(r'box', BoxViews, basename='box')
-routers.register(r'Message', MessageViews, basename='Message')
-routers.register(r'replymessage', ReplyMessageViews, basename='replymessage')
-routers.register(r'advice', AdviceViews, basename='advice')
+# routers.register(r'Message', MessageViews, basename='Message')
+# routers.register(r'replymessage', ReplyMessageViews, basename='replymessage')
+# routers.register(r'advice', AdviceViews, basename='advice')
 
 urlpatterns = routers.urls

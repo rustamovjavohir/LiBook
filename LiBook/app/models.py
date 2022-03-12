@@ -1,5 +1,5 @@
 # from django.contrib.auth.models import User
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
@@ -39,6 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):  # PermissionsMixin
             "Unselect this instead of deleting account."
         ), null=True, blank=True
     )
+    address = models.CharField(max_length=250, blank=True, null=True)
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now, null=True, blank=True)
     date_of_birth = models.DateField(blank=True, null=True)
 
@@ -108,7 +109,12 @@ class Book(models.Model):
             ("DOC", "DOC"))
     LANG = (('UZ', "UZ"),
             ("RU", "RU"))
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    category_list = Category.objects.all()
+    CATEGORY_NAME = ()
+    for obj in category_list:
+        my_tuple = ((f"{obj.name.upper()}", f"{obj.name}"),)
+        CATEGORY_NAME += my_tuple
+    category = models.CharField(choices=CATEGORY_NAME, default='Lirika', max_length=250)
     author = models.CharField(max_length=100, null=True)
     name = models.CharField(max_length=100, null=True)
     about = models.TextField(null=True)
@@ -119,6 +125,10 @@ class Book(models.Model):
     type = models.CharField(max_length=6, null=True, choices=TYPE, default="DOC")
     lang = models.CharField(max_length=2, null=True, default="UZ", choices=LANG)
     views = models.IntegerField(default=0)
+    price = models.IntegerField(default=5000)
+    rate = models.IntegerField(default=0)
+    count = models.IntegerField(default=1)
+    sold_num = models.IntegerField(default=0)
 
     # @property
     def __str__(self):
@@ -142,55 +152,15 @@ class Book(models.Model):
         ordering = ['id']
 
 
-# class Like(models.Model):
-#     book_file = models.ForeignKey(Book, on_delete=models.SET_NULL, null=True)
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     likes = models.IntegerField(default=0)
-#     date = models.DateTimeField(auto_now_add=True, blank=True)
-#
-#     def __str__(self):
-#         try:
-#             return "%s - %s" % (self.user.username, self.likes)
-#         except Exception as e:
-#             print(e)
-#             return ""
-
-
 class Box(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     book = models.ForeignKey(Book, on_delete=models.CASCADE, null=True)
     date = models.DateTimeField(auto_now_add=True, blank=True)
+    is_delivered = models.BooleanField(default=False)
+    is_paid = models.BooleanField(default=False)
 
     def __str__(self):
         return self.book.name
-
-#
-# class Message(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-#     book = models.ForeignKey(Book, on_delete=models.SET_NULL, blank=True, null=True)
-#     message = models.TextField()
-#     date = models.DateTimeField(auto_now_add=True, blank=True)
-#     modifaty_time = models.DateTimeField(null=True, blank=True)
-#     views = models.IntegerField(default=0)
-#
-#     def __str__(self):
-#         return self.message[:10]
-#
-#     @property
-#     def update_date(self):
-#         self.modifaty_date = datetime.now()
-#         self.save()
-#         return self
-#
-#
-# class ReplyMessage(models.Model):
-#     basic_message = models.ForeignKey(Message, on_delete=models.SET_NULL, null=True)
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-#     message = models.TextField()
-#     date = models.DateTimeField(auto_now_add=True, blank=True)
-#
-#     def __str__(self):
-#         return "%s %s" % (self.user.username, self.message[:10])
 
 
 class Advice(models.Model):
@@ -204,3 +174,14 @@ class Advice(models.Model):
             return self.text[:20]
         except Exception as e:
             return ''
+
+
+class Discount(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    new_price = models.IntegerField()
+    stat = models.DateTimeField(auto_now_add=True)
+    finish_date = models.DateTimeField(default=datetime.now() + timedelta(days=5))
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.book} {self.new_price}"

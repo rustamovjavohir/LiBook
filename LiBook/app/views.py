@@ -1,29 +1,20 @@
-from datetime import timedelta
-
-import jwt as jwt
-from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
-from drf_yasg import openapi
-from rest_framework import filters
-from rest_framework.decorators import action, permission_classes as view_permission_classes, authentication_classes
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView, CreateAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
-# from rest_framework_simplejwt import authentication
-from drf_yasg.utils import swagger_auto_schema
-import coreapi
-
-from .serializers import *
-from .utils import BookPagination, UserPagination
 from auth_user.user_jwt import L_JWTAuthentication
 from auth_user.utils import check_token
-
-from massages.models import Message, ReplyMessage
-
 from auth_user.utils import my_books
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from drf_yasg.utils import swagger_auto_schema
+from massages.models import Message, ReplyMessage
+from rest_framework import filters, status
+from rest_framework.decorators import action, permission_classes as view_permission_classes
+from rest_framework.generics import GenericAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
+
+from .serializers import *
+from .utils import BookPagination, UserPagination, discount, countless, sed_exel
 
 
 class UsersViews(ModelViewSet):
@@ -62,7 +53,7 @@ class UsersViews(ModelViewSet):
 
 
 class BookViews(ModelViewSet):
-    search_fields = ['author', 'name']
+    search_fields = ['author', 'name', 'category']
     filter_backends = (filters.SearchFilter,)
     queryset = Book.objects.all()
     serializer_class = BookSerializers
@@ -76,7 +67,16 @@ class BookViews(ModelViewSet):
         """
         Kitoblar ro'yhatini chop etish
         """
-        return super(BookViews, self).list(self, request, *args, **kwargs)
+        # queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = discount(queryset)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @swagger_auto_schema(operation_summary="Yangi kitob yaratish (qo'shish)")
     def create(self, request, *args, **kwargs):
@@ -106,7 +106,6 @@ class BookViews(ModelViewSet):
 
     @csrf_exempt
     @swagger_auto_schema(operation_summary="Id orqali kitob haqidagi ma'lumotlarni chop etish")
-    # @view_permission_classes([IsAuthenticated])
     def retrieve(self, request, *args, **kwargs):
         self.permission_classes = [IsAuthenticated]
         self.authentication_classes = [L_JWTAuthentication]
@@ -144,14 +143,22 @@ class BookViews(ModelViewSet):
 class BookList(ListAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializers
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('author', 'name', 'category')
     permission_classes = [AllowAny]
-    lookup_field = ['']
     pagination_class = BookPagination
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = BookSerializers(queryset, many=True)
-        return Response(serializer.data)
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = discount(queryset)
+        sed_exel()  # Adminga har hafta shanba kuni email jo'natiladi
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(countless(serializer.data))
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(countless(serializer.data))
 
     @swagger_auto_schema(operation_summary="Kitoblar ro'yhatini chop etish")
     def get(self, request, *args, **kwargs):
@@ -231,9 +238,9 @@ class BoxCreate(GenericAPIView):
     serializer_class = BoxSerializers
     permission_classes = [IsAuthenticated]
     authentication_classes = [L_JWTAuthentication]
-    book = openapi.Parameter('book', openapi.IN_QUERY, description="book id", type=openapi.TYPE_INTEGER)
+    parser_classes = (MultiPartParser,)
 
-    @swagger_auto_schema(operation_summary="Foydalanuvchi va kitobni bog'lovchi buyruq", manual_parameters=[book])
+    @swagger_auto_schema(operation_summary="Foydalanuvchi va kitobni bog'lovchi buyruq")
     def post(self, request, *args, **kwargs):
         """
            Kitobni savatchaga qo'shish
@@ -244,9 +251,78 @@ class BoxCreate(GenericAPIView):
         return Response({"message": "success"})
 
 
+class Basket(GenericAPIView):
+    serializer_class = BoxSerializers
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [L_JWTAuthentication]
+
+    @swagger_auto_schema(operation_summary="Savatchadagi kitoblar royhatini ko'rish")
+    def get(self, request, **kwargs):
+        boxs = Box.objects.filter(user_id=request.user.id, is_delivered=False, is_paid=False)
+        box_ser = BoxSerializers(boxs, many=True)
+        return Response(box_ser.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(operation_summary="Savatchadi kitoblarni sotib "
+                                           "olish (Bir nechtasini bir vaqtda olsa ham bo'ladi)")
+    def post(self, request, *args, **kwargs):
+        box_objects = []
+        box_id_list = str(request.data.get('data')).replace(',', ' ').split(' ')
+        for item in box_id_list:
+            try:
+                boxs = Box.objects.filter(id=int(item), is_delivered=False, is_paid=False).first()
+                boxs.is_paid = True
+                boxs.save()
+                box_objects.append(boxs)
+            except Exception as ex:
+                print(ex)
+        serializer = BoxSerializers(box_objects, many=True)
+        if serializer.data:
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response({"message": "books not found"}, status=status.HTTP_200_OK)
+
+
+class Delivery(GenericAPIView):
+    serializer_class = BoxSerializers
+    queryset = Box.objects.filter(is_delivered=False, is_paid=True)
+    permission_classes = [IsAdminUser]
+    authentication_classes = [L_JWTAuthentication]
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('user',)
+
+    @swagger_auto_schema(operation_summary="Yetkazib berilishi kerak bolgan kitoblar")
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(operation_summary="Kitoblarni yetkazib berilganini tasdiqlash")
+    def post(self, request, *args, **kwargs):
+        box_objects = []
+        box_id_list = str(request.data.get('data')).replace(',', ' ').split(' ')
+        for item in box_id_list:
+            try:
+                boxs = Box.objects.filter(id=int(item), is_delivered=False, is_paid=True).first()
+                boxs.is_delivered = True
+                boxs.save()
+                box_objects.append(boxs)
+            except Exception as ex:
+                print(ex)
+        serializer = BoxSerializers(box_objects, many=True)
+        if serializer.data:
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response({"message": "books not found"}, status=status.HTTP_200_OK)
+
+
 class CateogryViews(ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializers
+    permission_classes = [IsAdminUser]
+    authentication_classes = L_JWTAuthentication
 
 
 class AdviceViews(ModelViewSet):

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import jwt
 from django.shortcuts import render
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,10 +19,12 @@ from rest_framework.viewsets import ModelViewSet
 
 from .user_jwt import L_JWTAuthentication
 from .utils import my_books, admin, check_token
+from app.utils import same_books
 
 
 class RegisterViews(GenericAPIView):
     serializer_class = UserSerializers
+    parser_classes = (MultiPartParser,)
 
     @swagger_auto_schema(operation_summary="Ro'yhatdan o'tish")
     def post(self, request):
@@ -37,6 +40,7 @@ class RegisterViews(GenericAPIView):
 class LoginViews(GenericAPIView):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny, ]
+    parser_classes = (MultiPartParser,)
 
     @swagger_auto_schema(operation_summary="Login")
     def post(self, request):
@@ -72,6 +76,7 @@ class UserViews(GenericAPIView):
     authentication_classes = [L_JWTAuthentication]
     permission_classes = [IsAuthenticated, ]
     serializer_class = UserSerializers
+    parser_classes = (MultiPartParser,)
 
     @swagger_auto_schema(operation_summary="Foydalanuvchi haqidagi malumotlar")
     def get(self, request):
@@ -83,7 +88,9 @@ class UserViews(GenericAPIView):
         serializer = UserSerializers(user)
         data = serializer.data
         data['my_books'] = my_books(u_id=user.id)
-        data['users'] = admin(user)
+        data['same_books'] = same_books(user_id=user.id)
+        if self.request.user.is_staff:
+            data['users'] = admin(user)
         return Response(data)
 
     @swagger_auto_schema(operation_summary="Foydalanuvchi ma`lumotlarini yangilash")
@@ -112,3 +119,5 @@ class LogoutViews(APIView):
             "massage": "Tizimdam muvoffaqiyatni tark endinggiz"
         }
         return response
+
+

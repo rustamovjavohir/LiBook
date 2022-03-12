@@ -1,4 +1,3 @@
-from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from .models import *
@@ -8,7 +7,8 @@ class UserSerializers(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', "email", 'date_of_birth', 'password')  # 'password'
+        fields = (
+        'id', 'username', 'first_name', 'last_name', "email", 'date_of_birth', 'address', 'password')  # 'password'
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
@@ -34,11 +34,6 @@ class UserSerializers(ModelSerializer):
         return instance
 
 
-# class AkkountSerializers(ModelSerializer):
-#     class Meta:
-#         model = Akkount
-#         fields = "__all__"
-
 class CategorySerializers(ModelSerializer):
     class Meta:
         model = Category
@@ -50,11 +45,14 @@ class BookSerializers(ModelSerializer):
         model = Book
         fields = "__all__"
 
+
 class BoxSerializers(ModelSerializer):
     class Meta:
         model = Box
         fields = "__all__"
-
+        extra_kwargs = {
+            'is_delivered': {'write_only': True},
+        }
 
 
 class AdviceSerializers(ModelSerializer):
